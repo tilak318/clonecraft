@@ -1,5 +1,4 @@
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer');
 const { resolveURLToPath, resolveDuplicatedResources, isValidUrl } = require('../utils/resourceProcessor');
 
 class ScraperService {
@@ -84,7 +83,7 @@ class ScraperService {
           ],
           timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: await chromium.executablePath
+          executablePath: process.env.GOOGLE_CHROME_BIN
         };
 
         console.log('🔧 Browser options configured');
