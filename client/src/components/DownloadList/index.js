@@ -341,7 +341,7 @@ const DownloadList = () => {
       });
       
       setDownloadProgress(100);
-
+      
       // Create download link
       const blob = new Blob([response.data]);
       const downloadUrl = window.URL.createObjectURL(blob);
@@ -403,8 +403,8 @@ const DownloadList = () => {
           disabled={isScraping}
         />
         <ButtonGroup>
-          <Button 
-            onClick={handleAddUrl} 
+          <Button
+            onClick={handleAddUrl}
             disabled={isScraping || !url.trim()}
             color="primary"
           >
@@ -454,7 +454,7 @@ const DownloadList = () => {
               </DebugGrid>
             </ReportDetails>
             <ReportActions>
-              <Button 
+              <Button
                 onClick={() => handleDownload(scrapeResult)}
                 disabled={isDownloading}
                 color="primary"
@@ -466,7 +466,7 @@ const DownloadList = () => {
                   <><FaDownload /> Download</>
                 )}
               </Button>
-              <Button 
+              <Button
                 onClick={() => setScrapeResult(null)} 
                 color="danger"
               >
@@ -481,7 +481,7 @@ const DownloadList = () => {
         <EmptyState>
           No results yet. Enter a URL above to start scraping.
         </EmptyState>
-      )}
+        )}
     </DownloadListContainer>
   );
 };
