@@ -12,50 +12,28 @@ class ScraperService {
   async initializeBrowser() {
     if (!this.browser) {
       try {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-field-trial-config',
-          '--disable-ipc-flooding-protection'
+        const launchOptions = {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process', // This can help in resource-constrained environments
           ],
-          // Add timeout and ignore default args for better compatibility
-          timeout: 30000,
-          ignoreDefaultArgs: ['--disable-extensions']
-        });
-        console.log('Browser initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize browser:', error.message);
+          timeout: 60000, // Increased timeout for slower environments
+        };
         
-        // Try with different options if the first attempt fails
-        try {
-          console.log('Retrying with alternative configuration...');
-          this.browser = await puppeteer.launch({
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-gpu'
-            ],
-            timeout: 30000
-          });
-          console.log('Browser initialized with alternative configuration');
-        } catch (retryError) {
-          console.error('Failed to initialize browser with alternative configuration:', retryError.message);
-          throw new Error(`Browser initialization failed: ${retryError.message}. Please ensure Chrome is properly installed.`);
-        }
+        console.log('Attempting to launch browser with options:', launchOptions);
+        this.browser = await puppeteer.launch(launchOptions);
+        console.log('Browser initialized successfully');
+
+      } catch (error) {
+        console.error('Failed to initialize browser:', error);
+        throw new Error(`Browser initialization failed: ${error.message}. Please ensure Chrome is properly installed and configured for this environment.`);
       }
     }
     return this.browser;
