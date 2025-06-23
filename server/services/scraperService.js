@@ -28,7 +28,7 @@ class ScraperService {
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
         
         // Debug Chrome path
-        const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN;
         console.log('🔍 Chrome executable path:', chromePath);
         
         // Enhanced browser configuration for deployment
