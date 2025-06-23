@@ -27,10 +27,6 @@ class ScraperService {
         console.log('📊 Environment:', process.env.NODE_ENV);
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
         
-        // Debug Chrome path
-        const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN;
-        console.log('🔍 Chrome executable path:', chromePath);
-        
         // Enhanced browser configuration for deployment
         const browserOptions = {
           headless: true,
@@ -81,14 +77,6 @@ class ScraperService {
           timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions']
         };
-
-        // Only add executablePath if environment variable is set
-        if (chromePath) {
-          browserOptions.executablePath = chromePath;
-          console.log('🔧 Using custom Chrome path:', chromePath);
-        } else {
-          console.log('🔧 Using default Puppeteer Chrome');
-        }
 
         console.log('🔧 Browser options configured');
         

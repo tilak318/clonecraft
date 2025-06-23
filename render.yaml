@@ -4,13 +4,4 @@ services:
     runtime: node
     rootDir: server
     buildCommand: "npm install"
-    startCommand: "node index.js"
-    buildpacks:
-      - url: https://github.com/heroku/heroku-buildpack-google-chrome
-    envVars:
-      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
-      - key: GOOGLE_CHROME_BIN
-        value: "/app/.apt/usr/bin/google-chrome"
-      - key: PUPPETEER_EXECUTABLE_PATH
-        value: "/app/.apt/usr/bin/google-chrome" 
+    startCommand: "node index.js" 
