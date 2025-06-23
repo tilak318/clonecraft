@@ -5,7 +5,6 @@ const compression = require('compression');
 const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const puppeteer = require('puppeteer');
 const JSZip = require('jszip');
 const prettier = require('prettier');
 const mime = require('mime-types');
