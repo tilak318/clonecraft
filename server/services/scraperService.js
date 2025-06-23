@@ -11,25 +11,52 @@ class ScraperService {
    */
   async initializeBrowser() {
     if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-field-trial-config',
-          '--disable-ipc-flooding-protection'
-        ]
-      });
+      try {
+        this.browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-field-trial-config',
+            '--disable-ipc-flooding-protection'
+          ],
+          // Add timeout and ignore default args for better compatibility
+          timeout: 30000,
+          ignoreDefaultArgs: ['--disable-extensions']
+        });
+        console.log('Browser initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize browser:', error.message);
+        
+        // Try with different options if the first attempt fails
+        try {
+          console.log('Retrying with alternative configuration...');
+          this.browser = await puppeteer.launch({
+            headless: true,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-gpu'
+            ],
+            timeout: 30000
+          });
+          console.log('Browser initialized with alternative configuration');
+        } catch (retryError) {
+          console.error('Failed to initialize browser with alternative configuration:', retryError.message);
+          throw new Error(`Browser initialization failed: ${retryError.message}. Please ensure Chrome is properly installed.`);
+        }
+      }
     }
     return this.browser;
   }
@@ -119,7 +146,7 @@ class ScraperService {
 
       // Wait for any delayed resources and JavaScript execution
       console.log('Waiting for page to fully load...');
-      await page.waitForTimeout(5000);
+      await new Promise(r => setTimeout(r, 5000));
 
       // Try to wait for any lazy-loaded content
       try {
@@ -151,7 +178,7 @@ class ScraperService {
       }
 
       // Wait a bit more for any final resources
-      await page.waitForTimeout(3000);
+      await new Promise(r => setTimeout(r, 3000));
 
       // Also capture static resources from the page
       await this.captureStaticResources(page, resources, baseUrl);
