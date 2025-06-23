@@ -4,58 +4,151 @@ const { resolveURLToPath, resolveDuplicatedResources, isValidUrl } = require('..
 class ScraperService {
   constructor() {
     this.browser = null;
+    this.isInitializing = false;
+    this.lastError = null;
   }
 
   /**
-   * Initialize browser instance
+   * Initialize browser instance with enhanced error handling
    */
   async initializeBrowser() {
+    if (this.isInitializing) {
+      console.log('Browser initialization already in progress...');
+      while (this.isInitializing) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return this.browser;
+    }
+
     if (!this.browser) {
+      this.isInitializing = true;
       try {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-renderer-backgrounding',
-          '--disable-field-trial-config',
-          '--disable-ipc-flooding-protection'
-          ],
-          // Add timeout and ignore default args for better compatibility
-          timeout: 30000,
-          ignoreDefaultArgs: ['--disable-extensions']
-        });
-        console.log('Browser initialized successfully');
-      } catch (error) {
-        console.error('Failed to initialize browser:', error.message);
+        console.log('🚀 Starting browser initialization...');
+        console.log('📊 Environment:', process.env.NODE_ENV);
+        console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
         
-        // Try with different options if the first attempt fails
-        try {
-          console.log('Retrying with alternative configuration...');
-          this.browser = await puppeteer.launch({
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-gpu'
-            ],
-            timeout: 30000
-          });
-          console.log('Browser initialized with alternative configuration');
-        } catch (retryError) {
-          console.error('Failed to initialize browser with alternative configuration:', retryError.message);
-          throw new Error(`Browser initialization failed: ${retryError.message}. Please ensure Chrome is properly installed.`);
+        // Enhanced browser configuration for deployment
+        const browserOptions = {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding',
+            '--disable-field-trial-config',
+            '--disable-ipc-flooding-protection',
+            '--disable-extensions',
+            '--disable-plugins',
+            '--disable-images',
+            '--disable-javascript',
+            '--disable-css',
+            '--disable-fonts',
+            '--disable-default-apps',
+            '--disable-sync',
+            '--disable-translate',
+            '--hide-scrollbars',
+            '--mute-audio',
+            '--no-default-browser-check',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-background-networking',
+            '--disable-background-timer-throttling',
+            '--disable-client-side-phishing-detection',
+            '--disable-default-apps',
+            '--disable-extensions',
+            '--disable-hang-monitor',
+            '--disable-prompt-on-repost',
+            '--disable-sync',
+            '--disable-web-resources',
+            '--metrics-recording-only',
+            '--no-first-run',
+            '--safebrowsing-disable-auto-update',
+            '--enable-automation',
+            '--password-store=basic',
+            '--use-mock-keychain'
+          ],
+          timeout: 60000,
+          ignoreDefaultArgs: ['--disable-extensions'],
+          executablePath: process.env.CHROME_BIN || undefined
+        };
+
+        console.log('🔧 Browser options configured');
+        
+        this.browser = await puppeteer.launch(browserOptions);
+        
+        // Test browser functionality
+        const testPage = await this.browser.newPage();
+        await testPage.goto('data:text/html,<html><body>Test</body></html>', { timeout: 10000 });
+        await testPage.close();
+        
+        console.log('✅ Browser initialized successfully');
+        this.lastError = null;
+        
+      } catch (error) {
+        console.error('❌ Failed to initialize browser with primary configuration:', error.message);
+        this.lastError = error;
+        
+        // Try alternative configurations
+        const fallbackConfigs = [
+          {
+            name: 'Minimal configuration',
+            options: {
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+              timeout: 30000
+            }
+          },
+          {
+            name: 'No sandbox configuration',
+            options: {
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+              timeout: 30000
+            }
+          },
+          {
+            name: 'Basic configuration',
+            options: {
+              headless: true,
+              timeout: 30000
+            }
+          }
+        ];
+
+        for (const config of fallbackConfigs) {
+          try {
+            console.log(`🔄 Trying ${config.name}...`);
+            this.browser = await puppeteer.launch(config.options);
+            
+            // Test the browser
+            const testPage = await this.browser.newPage();
+            await testPage.goto('data:text/html,<html><body>Test</body></html>', { timeout: 10000 });
+            await testPage.close();
+            
+            console.log(`✅ Browser initialized with ${config.name}`);
+            this.lastError = null;
+            break;
+            
+          } catch (fallbackError) {
+            console.error(`❌ ${config.name} failed:`, fallbackError.message);
+            this.lastError = fallbackError;
+          }
         }
+
+        if (!this.browser) {
+          const errorMsg = `Browser initialization failed after all attempts. Last error: ${this.lastError?.message}`;
+          console.error(errorMsg);
+          throw new Error(errorMsg);
+        }
+      } finally {
+        this.isInitializing = false;
       }
     }
     return this.browser;
@@ -66,30 +159,44 @@ class ScraperService {
    */
   async closeBrowser() {
     if (this.browser) {
-      await this.browser.close();
+      try {
+        await this.browser.close();
+        console.log('🔒 Browser closed successfully');
+      } catch (error) {
+        console.error('❌ Error closing browser:', error.message);
+      }
       this.browser = null;
     }
   }
 
   /**
-   * Scrape website and extract all resources
+   * Scrape website and extract all resources with enhanced error handling
    * @param {string} url - URL to scrape
    * @param {Object} options - Scraping options
    * @returns {Promise<Object>} Scraping result
    */
   async scrapeWebsite(url, options = {}) {
+    console.log(`🌐 Starting scrape for: ${url}`);
+    console.log(`⚙️ Options:`, options);
+    
     if (!isValidUrl(url)) {
       throw new Error('Invalid URL provided');
     }
 
-    const browser = await this.initializeBrowser();
-    const page = await browser.newPage();
+    let browser = null;
+    let page = null;
+    const startTime = Date.now();
     
     try {
-      // Set user agent
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      // Initialize browser with error handling
+      browser = await this.initializeBrowser();
+      console.log(`✅ Browser ready, creating new page...`);
       
-      // Set viewport
+      page = await browser.newPage();
+      console.log(`✅ Page created successfully`);
+      
+      // Enhanced page configuration
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       await page.setViewport({ width: 1920, height: 1080 });
       
       // Set extra headers
@@ -98,58 +205,106 @@ class ScraperService {
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Pragma': 'no-cache',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
       });
 
-      // Enable request interception
+      console.log(`🔧 Page configured, enabling request interception...`);
+
+      // Enable request interception with error handling
       await page.setRequestInterception(true);
       
       const resources = [];
       const baseUrl = new URL(url);
+      let requestCount = 0;
+      let responseCount = 0;
+      let errorCount = 0;
       
-      // Handle requests
+      // Handle requests with detailed logging
       page.on('request', request => {
+        requestCount++;
         const requestUrl = request.url();
         
-        // Skip certain types of requests
-        if (this.shouldSkipRequest(requestUrl)) {
+        try {
+          // Skip certain types of requests
+          if (this.shouldSkipRequest(requestUrl)) {
+            request.abort();
+            return;
+          }
+          
+          request.continue();
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Request error for ${requestUrl}:`, error.message);
           request.abort();
-          return;
         }
-        
-        request.continue();
       });
       
-      // Handle responses
+      // Handle responses with detailed logging
       page.on('response', async response => {
+        responseCount++;
         const responseUrl = response.url();
         const contentType = response.headers()['content-type'] || '';
         
-        // Skip certain content types
-        if (this.shouldSkipResponse(responseUrl, contentType, url)) {
-          return;
-        }
-        
         try {
+          // Skip certain content types
+          if (this.shouldSkipResponse(responseUrl, contentType, url)) {
+            return;
+          }
+          
           await this.processResponse(response, resources);
         } catch (err) {
-          console.log(`Error processing response for ${responseUrl}:`, err);
+          errorCount++;
+          console.error(`❌ Response processing error for ${responseUrl}:`, err.message);
         }
       });
 
-      // Wait for page to load
-      console.log(`Navigating to: ${url}`);
-      await page.goto(url, { 
-        waitUntil: ['domcontentloaded', 'networkidle2'],
-        timeout: 60000 
+      // Handle page errors
+      page.on('error', error => {
+        console.error(`❌ Page error:`, error.message);
+        errorCount++;
       });
 
-      // Wait for any delayed resources and JavaScript execution
-      console.log('Waiting for page to fully load...');
-      await new Promise(r => setTimeout(r, 5000));
+      page.on('pageerror', error => {
+        console.error(`❌ Page JavaScript error:`, error.message);
+        errorCount++;
+      });
 
-      // Try to wait for any lazy-loaded content
+      // Navigate to the page with enhanced error handling
+      console.log(`🚀 Navigating to: ${url}`);
+      const navigationStart = Date.now();
+      
       try {
+        await page.goto(url, { 
+          waitUntil: ['domcontentloaded', 'networkidle2'],
+          timeout: 60000 
+        });
+        
+        const navigationTime = Date.now() - navigationStart;
+        console.log(`✅ Navigation completed in ${navigationTime}ms`);
+        
+      } catch (navigationError) {
+        console.error(`❌ Navigation failed:`, navigationError.message);
+        
+        // Try with different wait conditions
+        try {
+          console.log(`🔄 Retrying navigation with different wait conditions...`);
+          await page.goto(url, { 
+            waitUntil: 'domcontentloaded',
+            timeout: 30000 
+          });
+          console.log(`✅ Navigation completed with fallback method`);
+        } catch (fallbackError) {
+          throw new Error(`Navigation failed: ${navigationError.message}. Fallback also failed: ${fallbackError.message}`);
+        }
+      }
+
+      // Wait for page to load with error handling
+      console.log('⏳ Waiting for page to fully load...');
+      try {
+        await new Promise(r => setTimeout(r, 5000));
+        
+        // Try to wait for any lazy-loaded content
         await page.evaluate(() => {
           return new Promise((resolve) => {
             let lastHeight = document.body.scrollHeight;
@@ -174,32 +329,68 @@ class ScraperService {
           });
         });
       } catch (err) {
-        console.log('Error during scroll: ', err);
+        console.log('⚠️ Error during scroll: ', err.message);
       }
 
       // Wait a bit more for any final resources
       await new Promise(r => setTimeout(r, 3000));
 
-      // Also capture static resources from the page
+      // Capture static resources from the page
+      console.log('📦 Capturing static resources...');
       await this.captureStaticResources(page, resources, baseUrl);
       
       // Process and deduplicate resources
+      console.log('🔄 Processing and deduplicating resources...');
       const processedResources = resolveDuplicatedResources(resources);
       
-      console.log(`Scraped ${processedResources.length} resources from ${url}`);
+      const totalTime = Date.now() - startTime;
+      
+      console.log(`✅ Scraping completed successfully!`);
+      console.log(`📊 Statistics:`);
+      console.log(`   - Total time: ${totalTime}ms`);
+      console.log(`   - Requests processed: ${requestCount}`);
+      console.log(`   - Responses processed: ${responseCount}`);
+      console.log(`   - Errors encountered: ${errorCount}`);
+      console.log(`   - Resources found: ${processedResources.length}`);
       
       return {
         success: true,
         resources: processedResources,
         count: processedResources.length,
-        url: url
+        url: url,
+        debug: {
+          totalTime,
+          requestCount,
+          responseCount,
+          errorCount,
+          memoryUsage: process.memoryUsage(),
+          timestamp: new Date().toISOString()
+        }
       };
       
     } catch (error) {
-      console.error('Scraping error:', error);
-      throw new Error(`Failed to scrape website: ${error.message}`);
+      const totalTime = Date.now() - startTime;
+      console.error('❌ Scraping error:', error.message);
+      console.error('📊 Error context:', {
+        url,
+        totalTime,
+        memoryUsage: process.memoryUsage(),
+        browserStatus: !!browser,
+        pageStatus: !!page
+      });
+      
+      throw new Error(`Failed to scrape website: ${error.message}. Time taken: ${totalTime}ms`);
+      
     } finally {
-      await page.close();
+      // Clean up
+      if (page) {
+        try {
+          await page.close();
+          console.log('🔒 Page closed');
+        } catch (error) {
+          console.error('❌ Error closing page:', error.message);
+        }
+      }
     }
   }
 
