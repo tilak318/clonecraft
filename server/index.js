@@ -29,7 +29,10 @@ app.use(helmet());
 app.use(compression());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+    ? [
+        'https://clonecraft-i0mf.onrender.com',
+        'https://server-clonecraft.onrender.com'
+      ] 
     : ['http://localhost:3000'],
   credentials: true
 }));
@@ -96,10 +99,14 @@ process.on('SIGINT', async () => {
 
 // Start server
 app.listen(PORT, () => {
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://server-clonecraft.onrender.com'
+    : `http://localhost:${PORT}`;
+    
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend available at http://localhost:${PORT}`);
-  console.log(`📊 Health check at http://localhost:${PORT}/health`);
+  console.log(`📡 API available at ${baseUrl}/api`);
+  console.log(`🌐 Frontend available at ${baseUrl}`);
+  console.log(`📊 Health check at ${baseUrl}/health`);
 });
 
 module.exports = app; 

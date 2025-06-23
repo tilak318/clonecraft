@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import Button from '../Button';
 import { FaTrash, FaDownload, FaPlus, FaCog, FaInfoCircle, FaExclamationTriangle, FaCheckCircle } from 'react-icons/fa';
 import axios from 'axios';
+import { axiosConfig } from '../../config/api';
 import useSimulatedProgress from '../../hooks/useSimulatedProgress';
 
 const GlassPanel = styled.div`
@@ -311,7 +312,7 @@ const DownloadList = () => {
       const response = await axios.post('/api/scrape-debug', {
         url: url.trim(),
         options
-      });
+      }, axiosConfig);
       
       if (response.data.success) {
         setScrapeResult({
@@ -337,6 +338,7 @@ const DownloadList = () => {
         resources: item.resources,
         options
       }, {
+        ...axiosConfig,
         responseType: 'blob'
       });
       
