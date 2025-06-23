@@ -12,8 +12,10 @@ class ScraperService {
   async initializeBrowser() {
     if (!this.browser) {
       try {
+        console.log('Initializing browser for production environment...');
         this.browser = await puppeteer.launch({
           headless: true,
+          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -21,41 +23,17 @@ class ScraperService {
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding',
-            '--disable-field-trial-config',
-            '--disable-ipc-flooding-protection'
+            '--single-process', // This is often needed in containerized environments
+            '--disable-gpu'
           ],
           // Add timeout and ignore default args for better compatibility
-          timeout: 30000,
+          timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions']
         });
         console.log('Browser initialized successfully');
       } catch (error) {
         console.error('Failed to initialize browser:', error.message);
-        
-        // Try with different options if the first attempt fails
-        try {
-          console.log('Retrying with alternative configuration...');
-          this.browser = await puppeteer.launch({
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-gpu'
-            ],
-            timeout: 30000
-          });
-          console.log('Browser initialized with alternative configuration');
-        } catch (retryError) {
-          console.error('Failed to initialize browser with alternative configuration:', retryError.message);
-          throw new Error(`Browser initialization failed: ${retryError.message}. Please ensure Chrome is properly installed.`);
-        }
+        throw new Error(`Browser initialization failed: ${error.message}. Please ensure Chrome is properly installed on the server.`);
       }
     }
     return this.browser;
