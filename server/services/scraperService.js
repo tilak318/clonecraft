@@ -76,7 +76,7 @@ class ScraperService {
           ],
           timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome'
+          executablePath: process.env.GOOGLE_CHROME_BIN || '/usr/bin/google-chrome'
         };
 
         console.log('🔧 Browser options configured');
