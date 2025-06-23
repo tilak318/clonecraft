@@ -29,10 +29,7 @@ app.use(helmet());
 app.use(compression());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://clonecraft-i0mf.onrender.com',
-        'https://server-clonecraft.onrender.com'
-      ] 
+    ? ['https://clonecraft-i0mf.onrender.com']
     : ['http://localhost:3000'],
   credentials: true
 }));
