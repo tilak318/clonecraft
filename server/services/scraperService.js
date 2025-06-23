@@ -27,6 +27,10 @@ class ScraperService {
         console.log('📊 Environment:', process.env.NODE_ENV);
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
         
+        // Debug Chrome path
+        const chromePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+        console.log('🔍 Chrome executable path:', chromePath);
+        
         // Enhanced browser configuration for deployment
         const browserOptions = {
           headless: true,
@@ -75,7 +79,8 @@ class ScraperService {
             '--use-mock-keychain'
           ],
           timeout: 60000,
-          ignoreDefaultArgs: ['--disable-extensions']
+          ignoreDefaultArgs: ['--disable-extensions'],
+          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
         };
 
         console.log('🔧 Browser options configured');
