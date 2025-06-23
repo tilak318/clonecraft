@@ -28,9 +28,10 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet());
 app.use(compression());
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000'],
+  origin: [
+    'https://clonecraft-i0mf.onrender.com',
+    'http://localhost:3000'
+  ],
   credentials: true
 }));
 app.use(express.json({ limit: '500mb' }));
@@ -48,31 +49,6 @@ app.use('/api', apiRoutes);
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-// Serve static files from React build
-const clientBuildPath = path.join(__dirname, 'client/build');
-const clientBuildPathAlt = path.join(__dirname, '../client/build');
-
-// Try the primary path first, then fallback
-if (fs.existsSync(clientBuildPath)) {
-  app.use(express.static(clientBuildPath));
-} else if (fs.existsSync(clientBuildPathAlt)) {
-  app.use(express.static(clientBuildPathAlt));
-}
-
-// Serve React app for all other routes
-app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, 'client/build/index.html');
-  const indexPathAlt = path.join(__dirname, '../client/build/index.html');
-  
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else if (fs.existsSync(indexPathAlt)) {
-    res.sendFile(indexPathAlt);
-  } else {
-    res.status(404).send('Build files not found');
-  }
 });
 
 // Error handling middleware
@@ -98,7 +74,6 @@ process.on('SIGINT', async () => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
-  console.log(`🌐 Frontend available at http://localhost:${PORT}`);
   console.log(`📊 Health check at http://localhost:${PORT}/health`);
 });
 
