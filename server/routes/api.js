@@ -439,7 +439,7 @@ router.get('/test-environment', async (req, res) => {
     // Test Puppeteer availability
     let puppeteerStatus = 'unknown';
     try {
-      const puppeteer = require('puppeteer');
+      const puppeteer = require('puppeteer-core');
       puppeteerStatus = 'available';
       console.log(`[${requestId}] ✅ Puppeteer is available`);
     } catch (error) {
