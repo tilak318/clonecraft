@@ -10,6 +10,7 @@ const JSZip = require('jszip');
 const prettier = require('prettier');
 const mime = require('mime-types');
 const { URL } = require('url');
+const fs = require('fs');
 
 // Import middleware
 const { errorLogger, errorHandler, notFoundHandler, validationErrorHandler } = require('./middleware/errorHandler');
@@ -50,11 +51,28 @@ app.get('/health', (req, res) => {
 });
 
 // Serve static files from React build
-app.use(express.static(path.join(__dirname, 'client/build')));
+const clientBuildPath = path.join(__dirname, 'client/build');
+const clientBuildPathAlt = path.join(__dirname, '../client/build');
+
+// Try the primary path first, then fallback
+if (fs.existsSync(clientBuildPath)) {
+  app.use(express.static(clientBuildPath));
+} else if (fs.existsSync(clientBuildPathAlt)) {
+  app.use(express.static(clientBuildPathAlt));
+}
 
 // Serve React app for all other routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'client/build/index.html'));
+  const indexPath = path.join(__dirname, 'client/build/index.html');
+  const indexPathAlt = path.join(__dirname, '../client/build/index.html');
+  
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else if (fs.existsSync(indexPathAlt)) {
+    res.sendFile(indexPathAlt);
+  } else {
+    res.status(404).send('Build files not found');
+  }
 });
 
 // Error handling middleware
