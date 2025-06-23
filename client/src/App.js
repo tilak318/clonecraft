@@ -44,7 +44,7 @@ const App = () => {
           <Header />
           <ContentGrid>
             <MainContent>
-              <DownloadList />
+          <DownloadList />
             </MainContent>
             <SideContent>
               <Features />
