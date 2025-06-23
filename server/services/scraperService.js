@@ -1,4 +1,5 @@
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromium = require('chrome-aws-lambda');
 const { resolveURLToPath, resolveDuplicatedResources, isValidUrl } = require('../utils/resourceProcessor');
 
 class ScraperService {
@@ -26,6 +27,13 @@ class ScraperService {
         console.log('🚀 Starting browser initialization...');
         console.log('📊 Environment:', process.env.NODE_ENV);
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
+        
+        // Debug: Check all possible Chrome paths
+        console.log('🔍 Debugging Chrome paths:');
+        console.log('  PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+        console.log('  GOOGLE_CHROME_BIN:', process.env.GOOGLE_CHROME_BIN);
+        console.log('  PUPPETEER_CACHE_DIR:', process.env.PUPPETEER_CACHE_DIR);
+        console.log('  PUPPETEER_SKIP_CHROMIUM_DOWNLOAD:', process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD);
         
         // Enhanced browser configuration for deployment
         const browserOptions = {
@@ -75,7 +83,8 @@ class ScraperService {
             '--use-mock-keychain'
           ],
           timeout: 60000,
-          ignoreDefaultArgs: ['--disable-extensions']
+          ignoreDefaultArgs: ['--disable-extensions'],
+          executablePath: await chromium.executablePath
         };
 
         console.log('🔧 Browser options configured');
