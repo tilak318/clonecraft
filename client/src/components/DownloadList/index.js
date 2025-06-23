@@ -204,11 +204,11 @@ const ProgressBar = styled.div`
   overflow: hidden;
   margin-top: 10px;
 `;
-
+  
 const ProgressFill = styled.div`
   height: 100%;
   background-color: ${props => props.theme.primaryColor};
-  width: ${props => props.progress}%;
+    width: ${props => props.progress}%;
   transition: width 0.3s ease;
 `;
 

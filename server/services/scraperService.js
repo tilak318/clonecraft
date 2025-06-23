@@ -27,6 +27,12 @@ class ScraperService {
         console.log('📊 Environment:', process.env.NODE_ENV);
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
         
+        // Debug: Print environment variables
+        console.log('🔍 Environment variables:');
+        console.log('  GOOGLE_CHROME_BIN:', process.env.GOOGLE_CHROME_BIN);
+        console.log('  CHROME_BIN:', process.env.CHROME_BIN);
+        console.log('  PATH:', process.env.PATH);
+        
         // Enhanced browser configuration for deployment
         const browserOptions = {
           headless: true,
@@ -76,10 +82,11 @@ class ScraperService {
           ],
           timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: process.env.GOOGLE_CHROME_BIN || '/usr/bin/google-chrome'
+          executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN || '/usr/bin/google-chrome'
         };
 
         console.log('🔧 Browser options configured');
+        console.log('🔧 Executable path:', browserOptions.executablePath);
         
         this.browser = await puppeteer.launch(browserOptions);
         
@@ -95,14 +102,15 @@ class ScraperService {
         console.error('❌ Failed to initialize browser with primary configuration:', error.message);
         this.lastError = error;
         
-        // Try alternative configurations
+        // Try alternative configurations with different paths
         const fallbackConfigs = [
           {
             name: 'Minimal configuration',
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-              timeout: 30000
+              timeout: 30000,
+              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
             }
           },
           {
@@ -110,14 +118,16 @@ class ScraperService {
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox'],
-              timeout: 30000
+              timeout: 30000,
+              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
             }
           },
           {
             name: 'Basic configuration',
             options: {
               headless: true,
-              timeout: 30000
+              timeout: 30000,
+              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
             }
           }
         ];
@@ -160,7 +170,7 @@ class ScraperService {
   async closeBrowser() {
     if (this.browser) {
       try {
-        await this.browser.close();
+      await this.browser.close();
         console.log('🔒 Browser closed successfully');
       } catch (error) {
         console.error('❌ Error closing browser:', error.message);
@@ -226,13 +236,13 @@ class ScraperService {
         const requestUrl = request.url();
         
         try {
-          // Skip certain types of requests
-          if (this.shouldSkipRequest(requestUrl)) {
-            request.abort();
-            return;
-          }
-          
-          request.continue();
+        // Skip certain types of requests
+        if (this.shouldSkipRequest(requestUrl)) {
+          request.abort();
+          return;
+        }
+        
+        request.continue();
         } catch (error) {
           errorCount++;
           console.error(`❌ Request error for ${requestUrl}:`, error.message);
@@ -247,11 +257,11 @@ class ScraperService {
         const contentType = response.headers()['content-type'] || '';
         
         try {
-          // Skip certain content types
-          if (this.shouldSkipResponse(responseUrl, contentType, url)) {
-            return;
-          }
-          
+        // Skip certain content types
+        if (this.shouldSkipResponse(responseUrl, contentType, url)) {
+          return;
+        }
+        
           await this.processResponse(response, resources);
         } catch (err) {
           errorCount++;
@@ -275,11 +285,11 @@ class ScraperService {
       const navigationStart = Date.now();
       
       try {
-        await page.goto(url, { 
-          waitUntil: ['domcontentloaded', 'networkidle2'],
-          timeout: 60000 
-        });
-        
+      await page.goto(url, { 
+        waitUntil: ['domcontentloaded', 'networkidle2'],
+        timeout: 60000 
+      });
+
         const navigationTime = Date.now() - navigationStart;
         console.log(`✅ Navigation completed in ${navigationTime}ms`);
         
@@ -302,9 +312,9 @@ class ScraperService {
       // Wait for page to load with error handling
       console.log('⏳ Waiting for page to fully load...');
       try {
-        await new Promise(r => setTimeout(r, 5000));
-        
-        // Try to wait for any lazy-loaded content
+      await new Promise(r => setTimeout(r, 5000));
+
+      // Try to wait for any lazy-loaded content
         await page.evaluate(() => {
           return new Promise((resolve) => {
             let lastHeight = document.body.scrollHeight;
@@ -385,7 +395,7 @@ class ScraperService {
       // Clean up
       if (page) {
         try {
-          await page.close();
+      await page.close();
           console.log('🔒 Page closed');
         } catch (error) {
           console.error('❌ Error closing page:', error.message);

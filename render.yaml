@@ -4,7 +4,7 @@ services:
     runtime: node
     rootDir: server
     buildCommand: "npm install"
-    startCommand: "find / -name google-chrome -type f 2>/dev/null; node index.js"
+    startCommand: "node index.js"
     envVars:
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
         value: true
