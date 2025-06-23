@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { scrapeWebsite } = require('../services/scraperService');
+const scraperService = require('../services/scraperService');
 const zipService = require('../services/zipService');
 const { validateScrapeRequest, validateDownloadRequest, rateLimiter } = require('../middleware/validation');
 
@@ -15,7 +15,7 @@ router.post('/scrape', rateLimiter, validateScrapeRequest, async (req, res, next
     
     console.log(`Starting scrape for: ${url}`);
     
-    const result = await scrapeWebsite(url, options);
+    const result = await scraperService.scrapeWebsite(url, options);
     
     console.log(`Scraped ${result.count} resources from ${url}`);
     
@@ -38,7 +38,7 @@ router.post('/scrape-debug', rateLimiter, validateScrapeRequest, async (req, res
     console.log(`Starting debug scrape for: ${url}`);
     
     const startTime = Date.now();
-    const result = await scrapeWebsite(url, options);
+    const result = await scraperService.scrapeWebsite(url, options);
     const endTime = Date.now();
     
     // Analyze resources
@@ -148,9 +148,17 @@ router.post('/download-with-info', rateLimiter, validateDownloadRequest, async (
  * @access  Public
  */
 router.get('/health', (req, res) => {
+  const scraperStatus = scraperService.getStatus();
+  
   res.json({
     status: 'OK',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    services: {
+      scraper: scraperStatus,
+      zip: 'OK'
+    },
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
   });
 });
 
@@ -160,9 +168,24 @@ router.get('/health', (req, res) => {
  * @access  Public
  */
 router.get('/status', (req, res) => {
+  const scraperStatus = scraperService.getStatus();
+  
   res.json({
     success: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    services: {
+      scraper: scraperStatus,
+      zip: {
+        status: 'OK',
+        timestamp: new Date().toISOString()
+      }
+    },
+    system: {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      nodeVersion: process.version,
+      platform: process.platform
+    }
   });
 });
 
@@ -178,7 +201,7 @@ router.get('/test-scrape/:domain', async (req, res, next) => {
     
     console.log(`Testing scrape with: ${testUrl}`);
     
-    const result = await scrapeWebsite(testUrl, {});
+    const result = await scraperService.scrapeWebsite(testUrl, {});
     
     res.json({
       success: true,
