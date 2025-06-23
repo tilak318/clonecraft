@@ -1,4 +1,4 @@
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const { resolveURLToPath, resolveDuplicatedResources, isValidUrl } = require('../utils/resourceProcessor');
 
 class ScraperService {
@@ -26,12 +26,6 @@ class ScraperService {
         console.log('🚀 Starting browser initialization...');
         console.log('📊 Environment:', process.env.NODE_ENV);
         console.log('💾 Available memory:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
-        
-        // Debug: Print environment variables
-        console.log('🔍 Environment variables:');
-        console.log('  GOOGLE_CHROME_BIN:', process.env.GOOGLE_CHROME_BIN);
-        console.log('  CHROME_BIN:', process.env.CHROME_BIN);
-        console.log('  PATH:', process.env.PATH);
         
         // Enhanced browser configuration for deployment
         const browserOptions = {
@@ -81,12 +75,10 @@ class ScraperService {
             '--use-mock-keychain'
           ],
           timeout: 60000,
-          ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN || '/usr/bin/google-chrome'
+          ignoreDefaultArgs: ['--disable-extensions']
         };
 
         console.log('🔧 Browser options configured');
-        console.log('🔧 Executable path:', browserOptions.executablePath);
         
         this.browser = await puppeteer.launch(browserOptions);
         
@@ -102,15 +94,14 @@ class ScraperService {
         console.error('❌ Failed to initialize browser with primary configuration:', error.message);
         this.lastError = error;
         
-        // Try alternative configurations with different paths
+        // Try alternative configurations
         const fallbackConfigs = [
           {
             name: 'Minimal configuration',
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-              timeout: 30000,
-              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
+              timeout: 30000
             }
           },
           {
@@ -118,16 +109,14 @@ class ScraperService {
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox'],
-              timeout: 30000,
-              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
+              timeout: 30000
             }
           },
           {
             name: 'Basic configuration',
             options: {
               headless: true,
-              timeout: 30000,
-              executablePath: process.env.GOOGLE_CHROME_BIN || process.env.CHROME_BIN
+              timeout: 30000
             }
           }
         ];
