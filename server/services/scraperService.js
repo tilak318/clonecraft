@@ -79,9 +79,16 @@ class ScraperService {
             '--use-mock-keychain'
           ],
           timeout: 60000,
-          ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH
+          ignoreDefaultArgs: ['--disable-extensions']
         };
+
+        // Only add executablePath if environment variable is set
+        if (chromePath) {
+          browserOptions.executablePath = chromePath;
+          console.log('🔧 Using custom Chrome path:', chromePath);
+        } else {
+          console.log('🔧 Using default Puppeteer Chrome');
+        }
 
         console.log('🔧 Browser options configured');
         
