@@ -75,7 +75,8 @@ class ScraperService {
             '--use-mock-keychain'
           ],
           timeout: 60000,
-          ignoreDefaultArgs: ['--disable-extensions']
+          ignoreDefaultArgs: ['--disable-extensions'],
+          executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome'
         };
 
         console.log('🔧 Browser options configured');
