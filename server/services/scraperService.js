@@ -15,6 +15,13 @@ class ScraperService {
    * Initialize browser instance with enhanced error handling
    */
   async initializeBrowser() {
+    // Check if we should use fallback mode (when Chrome is not available)
+    if (process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true') {
+      console.log('🔄 Chrome download skipped, using fallback mode');
+      this.useFallback = true;
+      throw new Error('Chrome not available - using fallback mode');
+    }
+
     if (this.isInitializing) {
       console.log('Browser initialization already in progress...');
       while (this.isInitializing) {
