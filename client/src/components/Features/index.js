@@ -1,9 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { FaBolt, FaFolder, FaMagic, FaCode, FaCog, FaExclamationTriangle } from 'react-icons/fa';
-import Button from '../Button';
-import axios from 'axios';
-import { axiosConfig } from '../../config/api';
+import { FaBolt, FaFolder, FaMagic, FaCode } from 'react-icons/fa';
 
 const FeaturesContainer = styled.div`
   background: ${props => props.theme.backgroundColor};
@@ -63,31 +60,6 @@ const FeatureDescription = styled.p`
   line-height: 1.5;
 `;
 
-const Card = styled.div`
-  margin-top: 30px;
-  padding: 25px;
-  background: rgba(0,0,0,0.2);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-`;
-
-const ButtonGroup = styled.div`
-  margin-bottom: 15px;
-`;
-
-const Spinner = styled.div`
-  width: 16px;
-  height: 16px;
-  border: 2px solid ${props => props.theme.borderColor};
-  border-top: 2px solid ${props => props.theme.primaryColor};
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`;
-
 const Features = () => {
     const features = [
         {
@@ -112,8 +84,8 @@ const Features = () => {
         },
     ];
 
-    return (
-      <FeaturesContainer>
+  return (
+    <FeaturesContainer>
         <Title>Why Use CloneCraft?</Title>
         <FeatureList>
             {features.map(feature => (
@@ -126,8 +98,8 @@ const Features = () => {
                 </FeatureItem>
             ))}
         </FeatureList>
-      </FeaturesContainer>
-    );
+    </FeaturesContainer>
+  );
 };
 
 export default Features; 
