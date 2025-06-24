@@ -6,7 +6,7 @@ const API_CONFIG = {
   },
   // Production environment
   production: {
-    baseURL: 'https://server-clonecraft.onrender.com'
+    baseURL: 'https://server-clonecraft-production-b992.up.railway.app'
   }
 };
 

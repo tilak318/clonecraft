@@ -97,7 +97,7 @@ process.on('SIGINT', async () => {
 // Start server
 app.listen(PORT, () => {
   const baseUrl = process.env.NODE_ENV === 'production' 
-    ? 'https://server-clonecraft.onrender.com'
+    ? 'https://server-clonecraft-production-b992.up.railway.app'
     : `http://localhost:${PORT}`;
     
   console.log(`🚀 Server running on port ${PORT}`);
