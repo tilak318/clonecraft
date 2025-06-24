@@ -86,9 +86,12 @@ class ScraperService {
         };
 
         // Add executable path if environment variable is set
-        if (process.env.GOOGLE_CHROME_BIN) {
+        if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+          browserOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+          console.log('🔧 Using Chrome from PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
+        } else if (process.env.GOOGLE_CHROME_BIN) {
           browserOptions.executablePath = process.env.GOOGLE_CHROME_BIN;
-          console.log('🔧 Using Chrome from environment variable:', process.env.GOOGLE_CHROME_BIN);
+          console.log('🔧 Using Chrome from GOOGLE_CHROME_BIN:', process.env.GOOGLE_CHROME_BIN);
         } else {
           console.log('🔧 Using default Puppeteer Chrome (no environment variable set)');
         }
@@ -111,6 +114,32 @@ class ScraperService {
         
         // Try alternative configurations
         const fallbackConfigs = [
+          {
+            name: 'Minimal configuration with Chrome path',
+            options: {
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+              timeout: 30000,
+              executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN
+            }
+          },
+          {
+            name: 'No sandbox configuration with Chrome path',
+            options: {
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox'],
+              timeout: 30000,
+              executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN
+            }
+          },
+          {
+            name: 'Basic configuration with Chrome path',
+            options: {
+              headless: true,
+              timeout: 30000,
+              executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || process.env.GOOGLE_CHROME_BIN
+            }
+          },
           {
             name: 'Minimal configuration',
             options: {
