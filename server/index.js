@@ -24,19 +24,8 @@ const scraperService = require('./services/scraperService');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Log environment configuration at startup
-console.log('🚀 Starting ResourcesSaverExt Server...');
-console.log('📊 Environment Configuration:');
-console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
-console.log(`   - PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: ${process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD}`);
-console.log(`   - PUPPETEER_CACHE_DIR: ${process.env.PUPPETEER_CACHE_DIR}`);
-console.log(`   - PORT: ${PORT}`);
-
 // Middleware
-app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
-}));
+app.use(helmet());
 app.use(compression());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
@@ -58,12 +47,7 @@ app.use('/api', apiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    puppeteerSkipChrome: process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-  });
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Serve static files from React build
@@ -120,8 +104,6 @@ app.listen(PORT, () => {
   console.log(`📡 API available at ${baseUrl}/api`);
   console.log(`🌐 Frontend available at ${baseUrl}`);
   console.log(`📊 Health check at ${baseUrl}/health`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔧 Puppeteer Chrome Download: ${process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true' ? 'SKIPPED' : 'ENABLED'}`);
 });
 
 module.exports = app; 
