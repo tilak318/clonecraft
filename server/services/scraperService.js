@@ -1,11 +1,14 @@
 const puppeteer = require('puppeteer');
 const { resolveURLToPath, resolveDuplicatedResources, isValidUrl } = require('../utils/resourceProcessor');
+const FallbackScraperService = require('./fallbackScraperService');
 
 class ScraperService {
   constructor() {
     this.browser = null;
     this.isInitializing = false;
     this.lastError = null;
+    this.fallbackService = new FallbackScraperService();
+    this.useFallback = false;
   }
 
   /**
@@ -76,7 +79,10 @@ class ScraperService {
           ],
           timeout: 60000,
           ignoreDefaultArgs: ['--disable-extensions'],
-          executablePath: process.env.CHROME_BIN || undefined
+          // Use Puppeteer's bundled Chrome instead of system Chrome
+          executablePath: undefined,
+          // Force Puppeteer to download and use its own Chrome
+          product: 'chrome'
         };
 
         console.log('🔧 Browser options configured');
@@ -102,7 +108,9 @@ class ScraperService {
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-              timeout: 30000
+              timeout: 30000,
+              executablePath: undefined,
+              product: 'chrome'
             }
           },
           {
@@ -110,14 +118,18 @@ class ScraperService {
             options: {
               headless: true,
               args: ['--no-sandbox', '--disable-setuid-sandbox'],
-              timeout: 30000
+              timeout: 30000,
+              executablePath: undefined,
+              product: 'chrome'
             }
           },
           {
             name: 'Basic configuration',
             options: {
               headless: true,
-              timeout: 30000
+              timeout: 30000,
+              executablePath: undefined,
+              product: 'chrome'
             }
           }
         ];
@@ -181,6 +193,12 @@ class ScraperService {
     
     if (!isValidUrl(url)) {
       throw new Error('Invalid URL provided');
+    }
+
+    // If we're already using fallback mode, use it directly
+    if (this.useFallback) {
+      console.log('🔄 Using fallback scraper service...');
+      return await this.fallbackService.scrapeWebsite(url, options);
     }
 
     let browser = null;
@@ -367,26 +385,33 @@ class ScraperService {
           timestamp: new Date().toISOString()
         }
       };
-      
+
     } catch (error) {
-      const totalTime = Date.now() - startTime;
-      console.error('❌ Scraping error:', error.message);
-      console.error('📊 Error context:', {
-        url,
-        totalTime,
-        memoryUsage: process.memoryUsage(),
-        browserStatus: !!browser,
-        pageStatus: !!page
-      });
+      console.error('❌ Puppeteer scraping failed:', error.message);
       
-      throw new Error(`Failed to scrape website: ${error.message}. Time taken: ${totalTime}ms`);
+      // If browser initialization failed, switch to fallback mode permanently
+      if (error.message.includes('Could not find Chrome') || error.message.includes('Browser initialization failed')) {
+        console.log('🔄 Switching to fallback scraper service permanently...');
+        this.useFallback = true;
+        return await this.fallbackService.scrapeWebsite(url, options);
+      }
+      
+      // For other errors, try fallback once
+      console.log('🔄 Trying fallback scraper service...');
+      try {
+        const fallbackResult = await this.fallbackService.scrapeWebsite(url, options);
+        console.log('✅ Fallback scraper succeeded');
+        return fallbackResult;
+      } catch (fallbackError) {
+        console.error('❌ Both Puppeteer and fallback scraper failed');
+        throw new Error(`Scraping failed: ${error.message}. Fallback also failed: ${fallbackError.message}`);
+      }
       
     } finally {
-      // Clean up
+      // Clean up resources
       if (page) {
         try {
           await page.close();
-          console.log('🔒 Page closed');
         } catch (error) {
           console.error('❌ Error closing page:', error.message);
         }
@@ -607,7 +632,10 @@ class ScraperService {
   getStatus() {
     return {
       browserOpen: !!this.browser,
-      timestamp: new Date().toISOString()
+      useFallback: this.useFallback,
+      fallbackAvailable: this.fallbackService.isAvailable,
+      timestamp: new Date().toISOString(),
+      method: this.useFallback ? 'fallback-http' : 'puppeteer'
     };
   }
 }
