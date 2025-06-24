@@ -17,7 +17,7 @@ const GlassPanel = styled.div`
 `;
 
 const DownloadListContainer = styled(GlassPanel)`
-  /* Inherits from GlassPanel */
+  height: 100%;
 `;
 
 const Section = styled.div`

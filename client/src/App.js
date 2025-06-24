@@ -3,6 +3,7 @@ import styled, { ThemeProvider } from 'styled-components';
 import Header from './components/Header';
 import DownloadList from './components/DownloadList';
 import Features from './components/Features';
+import Footer from './components/Footer';
 import { useAppTheme } from './hooks/useAppTheme';
 import { appReducers, appInitialState } from './store/reducers';
 
@@ -23,15 +24,19 @@ const ContentGrid = styled.div`
   display: grid;
   grid-template-columns: 1.3fr 1fr;
   gap: 30px;
-  align-items: start;
+  align-items: stretch;
 
   @media (max-width: 992px) {
     grid-template-columns: 1fr;
   }
 `;
 
-const MainContent = styled.main``;
-const SideContent = styled.aside``;
+const MainContent = styled.main`
+  height: 100%;
+`;
+const SideContent = styled.aside`
+  height: 100%;
+`;
 
 const App = () => {
   const [state, dispatch] = useReducer(appReducers, appInitialState);
@@ -44,13 +49,14 @@ const App = () => {
           <Header />
           <ContentGrid>
             <MainContent>
-          <DownloadList />
+              <DownloadList />
             </MainContent>
             <SideContent>
               <Features />
             </SideContent>
           </ContentGrid>
         </AppContainer>
+        <Footer />
       </AppWrapper>
     </ThemeProvider>
   );
