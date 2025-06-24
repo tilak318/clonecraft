@@ -89,13 +89,21 @@ router.post('/scrape-debug', rateLimiter, validateScrapeRequest, async (req, res
     const result = await scraperService.scrapeWebsite(url, options);
     const endTime = Date.now();
     
+    // --- FIX: Flatten resources if fallback returns an object ---
+    let allResources = [];
+    if (Array.isArray(result.resources)) {
+      allResources = result.resources;
+    } else if (result.resources && typeof result.resources === 'object') {
+      allResources = Object.values(result.resources).flat();
+    }
+    
     // Analyze resources
     const resourceTypes = {};
     const resourceSizes = [];
     const domains = new Set();
     const statusCodes = {};
     
-    result.resources.forEach(resource => {
+    allResources.forEach(resource => {
       // Count by type
       const type = resource.type || 'unknown';
       resourceTypes[type] = (resourceTypes[type] || 0) + 1;
@@ -120,7 +128,7 @@ router.post('/scrape-debug', rateLimiter, validateScrapeRequest, async (req, res
     });
     
     const analysis = {
-      totalResources: result.count,
+      totalResources: allResources.length,
       uniqueDomains: domains.size,
       resourceTypes,
       statusCodes,
