@@ -8,17 +8,17 @@ class ScraperService {
     this.isInitializing = false;
     this.lastError = null;
     this.fallbackService = new FallbackScraperService();
-    // Force fallback mode on Render
-    this.useFallback = process.env.RENDER === 'true' || process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true';
+    this.useFallback = false;
   }
 
   /**
    * Initialize browser instance with enhanced error handling
    */
   async initializeBrowser() {
-    // Always use fallback mode on Render
-    if (this.useFallback) {
-      console.log('🔄 Fallback mode forced: using fallback scraper service');
+    // Check if we should use fallback mode (when Chrome is not available)
+    if (process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true') {
+      console.log('🔄 Chrome download skipped, using fallback mode');
+      this.useFallback = true;
       throw new Error('Chrome not available - using fallback mode');
     }
 

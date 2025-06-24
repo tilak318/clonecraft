@@ -421,25 +421,52 @@ router.get('/test-environment', async (req, res) => {
   try {
     console.log(`[${requestId}] 🔍 Testing environment configuration...`);
     
-    // Check fallback mode
-    const skipChrome = scraperService.useFallback;
-    console.log(`[${requestId}] 🔧 Fallback mode: ${skipChrome}`);
+    // Check environment variables
+    const skipChrome = process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true';
+    console.log(`[${requestId}] 🔧 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: ${skipChrome}`);
     
     // Test Puppeteer availability
-    let puppeteerStatus = 'skipped (fallback mode)';
-    let browserStatus = 'skipped (fallback mode)';
-    let scraperMethod = 'fallback-http';
-    if (!skipChrome) {
+    let puppeteerStatus = 'unknown';
+    try {
+      const puppeteer = require('puppeteer');
+      puppeteerStatus = 'available';
+      console.log(`[${requestId}] ✅ Puppeteer is available`);
+    } catch (error) {
+      puppeteerStatus = `error: ${error.message}`;
+      console.error(`[${requestId}] ❌ Puppeteer error:`, error.message);
+    }
+    
+    // Test browser initialization or fallback
+    let browserStatus = 'unknown';
+    let scraperMethod = 'unknown';
+    
+    if (skipChrome) {
+      // Chrome is skipped, test fallback service
       try {
-        const puppeteer = require('puppeteer');
-        puppeteerStatus = 'available';
-        console.log(`[${requestId}] ✅ Puppeteer is available`);
+        const FallbackScraperService = require('../services/fallbackScraperService');
+        const fallbackService = new FallbackScraperService();
+        const isAvailable = await fallbackService.checkAvailability();
+        
+        if (isAvailable) {
+          browserStatus = 'fallback-available';
+          scraperMethod = 'fallback-http';
+          console.log(`[${requestId}] ✅ Fallback scraper is available`);
+        } else {
+          browserStatus = 'fallback-unavailable';
+          console.log(`[${requestId}] ❌ Fallback scraper is unavailable`);
+        }
+      } catch (error) {
+        browserStatus = `fallback-error: ${error.message}`;
+        console.error(`[${requestId}] ❌ Fallback service error:`, error.message);
+      }
+    } else {
+      // Try to initialize Chrome browser
+      try {
         const browser = await scraperService.initializeBrowser();
         browserStatus = 'initialized';
         scraperMethod = 'puppeteer';
         console.log(`[${requestId}] ✅ Browser initialized successfully`);
       } catch (error) {
-        puppeteerStatus = `error: ${error.message}`;
         browserStatus = `error: ${error.message}`;
         scraperMethod = 'fallback-http';
         console.error(`[${requestId}] ❌ Browser initialization error:`, error.message);
@@ -488,7 +515,7 @@ router.get('/test-environment', async (req, res) => {
       },
       scraper: {
         method: scraperMethod,
-        fallback: skipChrome,
+        skipChrome: skipChrome,
         status: scraperService.getStatus()
       },
       environment: {
@@ -508,7 +535,7 @@ router.get('/test-environment', async (req, res) => {
     const totalTime = Date.now() - startTime;
     console.error(`[${requestId}] ❌ Environment test failed:`, error.message);
     
-    res.status(200).json({
+    res.status(500).json({
       success: false,
       error: error.message,
       requestId,
