@@ -342,51 +342,28 @@ router.get('/test-scrape/:domain', async (req, res, next) => {
     console.log(`[${requestId}] 🌍 Environment: ${process.env.NODE_ENV}`);
     console.log(`[${requestId}] 💾 Memory before:`, Math.round(process.memoryUsage().heapUsed / 1024 / 1024), 'MB');
     
-    // Test browser initialization
-    console.log(`[${requestId}] 🔧 Testing browser initialization...`);
-    const browser = await scraperService.initializeBrowser();
-    console.log(`[${requestId}] ✅ Browser initialized successfully`);
-    
-    // Test basic page creation
-    console.log(`[${requestId}] 📄 Testing page creation...`);
-    const page = await browser.newPage();
-    console.log(`[${requestId}] ✅ Page created successfully`);
-    
-    // Test basic navigation
-    console.log(`[${requestId}] 🚀 Testing basic navigation...`);
-    await page.goto('data:text/html,<html><body><h1>Test Page</h1></body></html>', { timeout: 10000 });
-    console.log(`[${requestId}] ✅ Basic navigation successful`);
-    
-    // Test real website navigation
-    console.log(`[${requestId}] 🌐 Testing real website navigation...`);
-    await page.goto(testUrl, { 
-      waitUntil: 'domcontentloaded',
-      timeout: 30000 
-    });
-    console.log(`[${requestId}] ✅ Real website navigation successful`);
-    
-    // Get page title
-    const title = await page.title();
-    console.log(`[${requestId}] 📋 Page title: ${title}`);
-    
-    // Close test page
-    await page.close();
+    // Test scraping using the main service (which handles fallback automatically)
+    console.log(`[${requestId}] 🔧 Testing scraping service...`);
+    const result = await scraperService.scrapeWebsite(testUrl, {});
     
     const totalTime = Date.now() - startTime;
     console.log(`[${requestId}] ✅ Test completed successfully in ${totalTime}ms`);
+    console.log(`[${requestId}] 📊 Resources found: ${result.count}`);
     
     res.json({
       success: true,
       testUrl,
-      title,
       requestId,
       serverTime: totalTime,
+      resources: result.count,
+      method: result.method || 'unknown',
       debug: {
         environment: process.env.NODE_ENV,
         memoryUsage: process.memoryUsage(),
         uptime: process.uptime(),
         nodeVersion: process.version,
         platform: process.platform,
+        scraperStatus: scraperService.getStatus(),
         timestamp: new Date().toISOString()
       }
     });
@@ -436,6 +413,10 @@ router.get('/test-environment', async (req, res) => {
   try {
     console.log(`[${requestId}] 🔍 Testing environment configuration...`);
     
+    // Check environment variables
+    const skipChrome = process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD === 'true';
+    console.log(`[${requestId}] 🔧 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: ${skipChrome}`);
+    
     // Test Puppeteer availability
     let puppeteerStatus = 'unknown';
     try {
@@ -447,15 +428,41 @@ router.get('/test-environment', async (req, res) => {
       console.error(`[${requestId}] ❌ Puppeteer error:`, error.message);
     }
     
-    // Test browser initialization
+    // Test browser initialization or fallback
     let browserStatus = 'unknown';
-    try {
-      const browser = await scraperService.initializeBrowser();
-      browserStatus = 'initialized';
-      console.log(`[${requestId}] ✅ Browser initialized successfully`);
-    } catch (error) {
-      browserStatus = `error: ${error.message}`;
-      console.error(`[${requestId}] ❌ Browser initialization error:`, error.message);
+    let scraperMethod = 'unknown';
+    
+    if (skipChrome) {
+      // Chrome is skipped, test fallback service
+      try {
+        const FallbackScraperService = require('../services/fallbackScraperService');
+        const fallbackService = new FallbackScraperService();
+        const isAvailable = await fallbackService.checkAvailability();
+        
+        if (isAvailable) {
+          browserStatus = 'fallback-available';
+          scraperMethod = 'fallback-http';
+          console.log(`[${requestId}] ✅ Fallback scraper is available`);
+        } else {
+          browserStatus = 'fallback-unavailable';
+          console.log(`[${requestId}] ❌ Fallback scraper is unavailable`);
+        }
+      } catch (error) {
+        browserStatus = `fallback-error: ${error.message}`;
+        console.error(`[${requestId}] ❌ Fallback service error:`, error.message);
+      }
+    } else {
+      // Try to initialize Chrome browser
+      try {
+        const browser = await scraperService.initializeBrowser();
+        browserStatus = 'initialized';
+        scraperMethod = 'puppeteer';
+        console.log(`[${requestId}] ✅ Browser initialized successfully`);
+      } catch (error) {
+        browserStatus = `error: ${error.message}`;
+        scraperMethod = 'fallback-http';
+        console.error(`[${requestId}] ❌ Browser initialization error:`, error.message);
+      }
     }
     
     // Test network connectivity
@@ -498,6 +505,11 @@ router.get('/test-environment', async (req, res) => {
         network: networkStatus,
         filesystem: fsStatus
       },
+      scraper: {
+        method: scraperMethod,
+        skipChrome: skipChrome,
+        status: scraperService.getStatus()
+      },
       environment: {
         nodeVersion: process.version,
         platform: process.platform,
@@ -514,6 +526,57 @@ router.get('/test-environment', async (req, res) => {
   } catch (error) {
     const totalTime = Date.now() - startTime;
     console.error(`[${requestId}] ❌ Environment test failed:`, error.message);
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      requestId,
+      serverTime: totalTime,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * @route   GET /api/test-fallback
+ * @desc    Test the fallback scraper service directly
+ * @access  Public
+ */
+router.get('/test-fallback', async (req, res) => {
+  const startTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
+  try {
+    console.log(`[${requestId}] 🧪 Testing fallback scraper service...`);
+    
+    const FallbackScraperService = require('../services/fallbackScraperService');
+    const fallbackService = new FallbackScraperService();
+    
+    // Test with a simple website
+    const testUrl = 'https://example.com';
+    const result = await fallbackService.scrapeWebsite(testUrl, {});
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`[${requestId}] ✅ Fallback test completed in ${totalTime}ms`);
+    
+    res.json({
+      success: true,
+      testUrl,
+      requestId,
+      serverTime: totalTime,
+      resources: result.resources,
+      method: result.method,
+      debug: {
+        environment: process.env.NODE_ENV,
+        memoryUsage: process.memoryUsage(),
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    const totalTime = Date.now() - startTime;
+    console.error(`[${requestId}] ❌ Fallback test failed:`, error.message);
     
     res.status(500).json({
       success: false,
