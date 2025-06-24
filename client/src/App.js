@@ -21,7 +21,7 @@ const AppContainer = styled.div`
 
 const ContentGrid = styled.div`
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 1.3fr 1fr;
   gap: 30px;
   align-items: start;
 
