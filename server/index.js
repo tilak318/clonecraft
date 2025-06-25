@@ -29,8 +29,17 @@ app.use(helmet());
 app.use(compression());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://clonecraft-i0mf.onrender.com']
-    : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:8080', 'http://127.0.0.1:8080'],
+    ? [
+        'https://clonecraft-i0mf.onrender.com',
+        'https://craftclone.onrender.com'
+      ]
+    : [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:8080',
+        'http://127.0.0.1:8080'
+      ],
   credentials: true
 }));
 app.use(express.json({ limit: '500mb' }));
