@@ -31,7 +31,7 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? [
         'https://clonecraft-i0mf.onrender.com',
-        'https://craftclone.onrender.com'
+        
       ]
     : [
         'http://localhost:3000',
