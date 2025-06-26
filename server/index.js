@@ -24,24 +24,15 @@ const scraperService = require('./services/scraperService');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Glitch-specific configurations
-const isGlitch = process.env.PROJECT_DOMAIN !== undefined;
-
 // Middleware
-app.use(helmet({
-  // Disable some security headers that might cause issues on Glitch
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
-}));
+app.use(helmet());
 app.use(compression());
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? [
         'https://clonecraft-i0mf.onrender.com',
-        'https://craftclone.onrender.com',
-        // Add Glitch domain if needed
-        process.env.PROJECT_DOMAIN ? `https://${process.env.PROJECT_DOMAIN}.glitch.me` : null
-      ].filter(Boolean)
+        'https://craftclone.onrender.com'
+      ]
     : [
         'http://localhost:3000',
         'http://localhost:5173',
@@ -65,12 +56,7 @@ app.use('/api', apiRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    platform: isGlitch ? 'Glitch' : 'Other',
-    port: PORT
-  });
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Serve static files from React build
@@ -119,19 +105,14 @@ process.on('SIGINT', async () => {
 
 // Start server
 app.listen(PORT, () => {
-  const baseUrl = isGlitch 
-    ? `https://${process.env.PROJECT_DOMAIN}.glitch.me`
-    : process.env.NODE_ENV === 'production' 
-      ? 'https://server-clonecraft-production-b992.up.railway.app'
-      : `http://localhost:${PORT}`;
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? 'https://server-clonecraft-production-b992.up.railway.app'
+    : `http://localhost:${PORT}`;
     
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 API available at ${baseUrl}/api`);
   console.log(`🌐 Frontend available at ${baseUrl}`);
   console.log(`📊 Health check at ${baseUrl}/health`);
-  if (isGlitch) {
-    console.log(`🔧 Running on Glitch platform`);
-  }
 });
 
 module.exports = app; 
